@@ -1,0 +1,12 @@
+node_modules
+.git
+.gitignore
+.env.test
+logs
+tests
+Dockerfile
+docker-compose.yml
+README.md
+.github
+eslint.config.js
+cypress.config.js

@@ -11,6 +11,8 @@ services:
       DB_USER: root
       DB_PASSWORD: root
       DB_NAME: test_db
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: password
 
   db:
     image: mariadb:10.5

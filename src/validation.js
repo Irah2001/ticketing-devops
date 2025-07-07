@@ -1,5 +1,5 @@
-const validate = (name, email) => {
-    if (!name || !email) {
+const validate = (type_id, email, message) => {
+    if (!type_id || !email || !message) {
         return false;
     }
     if (!email.includes('@')) {

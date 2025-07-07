@@ -1,6 +1,6 @@
-# TP #2 – CI/CD Pipeline with Database
+# CI/CD for an Express.js Ticketing Application
 
-![Node CI](https://github.com/Irah2001/tp-devops-2/actions/workflows/ci.yml/badge.svg)
+![Node CI](https://github.com/Irah2001/ticketing-devops/actions/workflows/ci.yml/badge.svg)
 
 ## Classe
 
@@ -9,142 +9,138 @@ ESGI M1 - IW
 
 ---
 
-This project is a Node.js/Express application designed to demonstrate a complete CI/CD pipeline using GitHub Actions. It includes a web form for data submission, a MariaDB database for storage, unit tests, end-to-end (E2E) tests, and a containerized setup with Docker.
+This project implements a ticketing application using Express.js with a complete CI/CD pipeline using GitHub Actions.
 
-## Features
-
--   **Web Form**: A simple HTML form at `GET /` to submit a name and email.
--   **Data Submission**: A `POST /submit` endpoint to process the form and save the data to the database.
--   **Submissions List**: A `GET /submissions` endpoint to display all entries from the database.
--   **Database Integration**: Uses a MariaDB database to persist data.
--   **Testing**: Includes both unit tests (Jest) and E2E tests (Cypress).
--   **CI/CD**: An automated GitHub Actions workflow for continuous integration and deployment.
--   **Containerization**: Docker and Docker Compose setup for easy local development.
-
-## Project Architecture
+## Project Structure
 
 ```
-tp-devops-2/
+ticketing/
 │
-├── .github/workflows/  # GitHub Actions CI/CD workflow
-│   └── ci.yml
-├── fixtures/           # Database seeding scripts
-│   └── seed.js
-├── public/             # Static assets (HTML form, CSS)
-│   ├── index.html
-│   ├── style.css
-│   └── submissions.html
-├── src/                # Application source code
-│   ├── db/             # Database connection setup
-│   │   └── database.js
-│   ├── routes/         # Express routes
-│   ├── app.js          # Main Express application
-│   └── validation.js   # Form validation logic
+├── src/                    # Express.js Application
+│   ├── app.js              # Main application file
+│   ├── routes/             # (Currently not used, but can be for more complex routing)
+│   ├── db/                 # Database connection
+│   └── validation.js       # Input validation logic
+│
+├── public/                 # Static files (HTML, CSS)
+│   ├── index.html          # Ticket submission form
+│   └── tickets.html        # Template for displaying tickets
+│   └── style.css           # Basic styling
+│
 ├── tests/
-│   ├── e2e/            # End-to-end tests with Cypress
-│   │   └── submission.cy.js
-│   └── unit/           # Unit tests with Jest
-│       ├── database.test.js
-│       └── validation.test.js
-├── .gitignore          # Specifies intentionally untracked files to ignore
-├── cypress.config.js   # Cypress configuration file
-├── .eslintrc.js        # ESLint configuration
-├── docker-compose.yml  # Docker Compose setup
-├── Dockerfile          # Dockerfile for the application
-├── init.sql            # Database initialization script
-├── package.json        # Project dependencies and scripts
-├── package-lock.json   # Records the exact dependency tree
-└── README.md           # This README file
+│   ├── unit/               # Unit tests (Jest)
+│   └── e2e/                # E2E tests (Cypress)
+│
+├── fixtures/               # Data for tests
+│   └── seed.js             # Script to seed the database
+│
+├── Dockerfile              # Dockerfile for building the application image
+├── .dockerignore           # Files to ignore when building Docker image
+├── .eslintrc.js            # ESLint configuration
+├── package.json            # Project dependencies and scripts
+├── package-lock.json       # Locked dependencies
+├── init.sql                # SQL script for initial database setup
+├── docker-compose.yml      # Docker Compose for local development
+├── .env.test               # Environment variables for testing
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml          # GitHub Actions CI/CD pipeline
+
 ```
 
-## Getting Started
+## Application Functionality
 
-### Prerequisites
+### Public Form (route `/`)
 
--   [Node.js](https://nodejs.org/) (v16 or later)
--   [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/)
+Accessible without authentication, allows submitting a ticket with:
+- **Type of request** (bug, question, suggestion) - fetched from the `types` table.
+- **Requester's email address**.
+- **Message** (ticket content).
 
-### Local Development (Recommended)
+### Ticket List (route `/tickets`)
 
-The easiest way to run the application locally is with Docker Compose. This will build the application container and run a separate container for the database, mirroring the CI environment.
+Requires **HTTP Basic authentication**. The username and password are provided via environment variables:
+- `ADMIN_USER`
+- `ADMIN_PASSWORD`
+
+## Local Development Setup
 
 1.  **Clone the repository:**
     ```bash
     git clone <repository-url>
-    cd <repository-name>
+    cd tp-devops-2
     ```
 
-2.  **Build and run the containers:**
+2.  **Environment Variables:**
+    Create a `.env` file in the root directory with the following:
+    ```
+    ADMIN_USER=your_admin_username
+    ADMIN_PASSWORD=your_admin_password
+    DB_HOST=db
+    DB_USER=root
+    DB_PASSWORD=root
+    DB_NAME=test_db
+    ```
+
+3.  **Start with Docker Compose:**
     ```bash
     docker-compose up --build
     ```
+    This will build the Docker image, start the MariaDB container, and the Express.js application.
 
-The application will be available at [http://localhost:3000](http://localhost:3000).
+4.  **Access the application:**
+    - Form: `http://localhost:3000`
+    - Tickets List: `http://localhost:3000/tickets` (requires basic auth)
 
-### Manual Local Setup
+## Testing
 
-If you prefer to run the application without Docker, you will need to have a local MariaDB instance running.
-
-1.  **Install dependencies:**
+-   **Unit Tests:**
     ```bash
-    npm install
+    npm test
     ```
-
-2.  **Configure environment variables:**
-    Create a `.env` file in the root of the project and add your database connection details:
-    ```env
-    DB_HOST=localhost
-    DB_USER=your_db_user
-    DB_PASSWORD=your_db_password
-    DB_NAME=your_db_name
-    ```
-
-3.  **Seed the database:**
-    Run the fixtures script to create the necessary tables.
+-   **E2E Tests:**
     ```bash
-    node fixtures/seed.js
+    npm run test:e2e
     ```
 
-4.  **Start the application:**
-    ```bash
-    npm start
-    ```
+## CI/CD with GitHub Actions
 
-## Running Tests
+The CI/CD pipeline is defined in `.github/workflows/ci.yml` and performs the following steps on `push` to `main` branch and `pull_request`:
 
-### Unit Tests
+1.  **Install dependencies** (`npm ci`)
+2.  **Run linter** (`eslint`)
+3.  **Start MariaDB container** for tests
+4.  **Wait for DB** to be ready
+5.  **Create tables and insert fixtures** (`node fixtures/seed.js`)
+6.  **Execute unit tests**
+7.  **Execute E2E tests**
+8.  **Build Docker image**
+9.  **Push Docker image** to Docker Hub
+10. **Deploy via SSH** (only on `main` branch pushes)
 
-To run the unit tests with Jest:
+### GitHub Secrets Configuration
 
-```bash
-npm test
-```
+To enable the CI/CD pipeline, you need to configure the following secrets in your GitHub repository settings (`Settings > Secrets and variables > Actions > New repository secret`):
 
-*Note: The database integration tests require a running database connection.*
+-   `DOCKER_USERNAME`: Your Docker Hub username.
+-   `DOCKER_TOKEN`: Your Docker Hub Access Token (generate one from Docker Hub settings).
+-   `ADMIN_USER`: Username for HTTP Basic authentication.
+-   `ADMIN_PASSWORD`: Password for HTTP Basic authentication.
+-   `SSH_HOST`: IP address or hostname of your remote deployment server.
+-   `SSH_USERNAME`: SSH username for your remote server.
+-   `SSH_KEY`: Private SSH key to connect to your remote server (ensure it's base64 encoded if needed, or just paste the raw private key).
+-   `DB_HOST`: Hostname of the database on your deployment server (e.g., `localhost` or the service name if using Docker Compose on the server).
+-   `DB_USER`: Database username for the deployed application.
+-   `DB_PASSWORD`: Database password for the deployed application.
+-   `DB_NAME`: Database name for the deployed application.
 
-### End-to-End Tests
+### Deployment
 
-To run the E2E tests with Cypress:
+The deployment step in the CI/CD pipeline connects to your remote server via SSH and performs the following:
 
-1.  Make sure the application is running (`npm start` or `docker-compose up`).
-2.  Open the Cypress test runner:
-    ```bash
-    npx cypress open
-    ```
+1.  Pulls the latest Docker image from Docker Hub.
+2.  Stops and removes any existing running container of the application.
+3.  Starts a new Docker container with the latest image, exposing port 3000 and passing necessary environment variables for the application and database connection.
 
-## CI/CD Pipeline
-
-The CI/CD pipeline is defined in `.github/workflows/ci.yml` and is triggered on every `push` and `pull_request` to the `main` branch.
-
-The workflow performs the following steps:
-
-1.  **Checkout Code**: Checks out the repository code.
-2.  **Setup Node.js**: Installs the specified Node.js version.
-3.  **Install Dependencies**: Runs `npm install`.
-4.  **Start Database Service**: Launches a MariaDB container to be used for testing.
-5.  **Lint Code**: Runs `npm run lint` to check for code style issues.
-6.  **Seed Database**: Executes the `fixtures/seed.js` script to prepare the test database.
-7.  **Run Unit Tests**: Runs `npm test`.
-8.  **Run E2E Tests**: Runs the Cypress tests against the running application.
-
-The pipeline will fail if any of these steps encounter an error, ensuring code quality and stability.
+**Note:** Ensure your remote server has Docker installed and configured. You might also need to set up a MariaDB instance on your remote server and configure its access for the deployed application.
