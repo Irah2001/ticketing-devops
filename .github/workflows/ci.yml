@@ -14,8 +14,8 @@ jobs:
       mariadb:
         image: mariadb:10.5
         env:
-          MARIADB_ROOT_PASSWORD: root
-          MARIADB_DATABASE: test_db
+          MARIADB_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MARIADB_DATABASE: ${{ secrets.DB_NAME }}
         ports:
           - 3306:3306
         options: >-
@@ -33,18 +33,28 @@ jobs:
         node-version: '20.18.1'
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci
 
     - name: Run linter
       run: npm run lint
 
+    - name: Wait for MariaDB
+      run: |
+        sudo apt-get update && sudo apt-get install -y mariadb-client
+        until mysqladmin ping -h ${{ secrets.DB_HOST }} -u ${{ secrets.DB_USER }} --silent; do
+          echo "Waiting for MariaDB..."
+          sleep 2
+        done
+      env:
+        MYSQL_PWD: root
+
     - name: Seed database
       run: node fixtures/seed.js
       env:
-        DB_HOST: 127.0.0.1
-        DB_USER: root
-        DB_PASSWORD: root
-        DB_NAME: test_db
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_NAME: ${{ secrets.DB_NAME }}
 
     - name: Run unit tests
       run: npm test
@@ -57,10 +67,10 @@ jobs:
         spec: tests/e2e/ticketing.cy.js
         config-file: cypress.config.js
       env:
-        DB_HOST: 127.0.0.1
-        DB_USER: root
-        DB_PASSWORD: root
-        DB_NAME: test_db
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_NAME: ${{ secrets.DB_NAME }}
         ADMIN_USER: ${{ secrets.ADMIN_USER }}
         ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 

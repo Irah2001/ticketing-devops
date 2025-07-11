@@ -40,10 +40,27 @@ const insertTypes = async () => {
     }
 };
 
+const insertTestTickets = async () => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.query(`
+            INSERT IGNORE INTO tickets (type_id, email, message) VALUES
+            (1, 'test@example.com', 'This is a test bug report.'),
+            (1, 'test1@example.com', 'This is the first test ticket (bug).'),
+            (2, 'test2@example.com', 'This is the second test ticket (question).'),
+            (3, 'test3@example.com', 'This is the third test ticket (suggestion).');
+        `);
+        console.log('Inserted test tickets.');
+    } finally {
+        connection.release();
+    }
+};
+
 const seed = async () => {
     try {
         await createTables();
         await insertTypes();
+        await insertTestTickets();
     } catch (error) {
         console.error('Error seeding database:', error);
     } finally {

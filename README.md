@@ -69,7 +69,7 @@ Requires **HTTP Basic authentication**. The username and password are provided v
 1.  **Clone the repository:**
     ```bash
     git clone <repository-url>
-    cd tp-devops-2
+    cd ticketing-devops
     ```
 
 2.  **Environment Variables:**
