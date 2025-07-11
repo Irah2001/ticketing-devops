@@ -96,14 +96,43 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/ticketing-app:latest
-          docker stop ticketing-app || true
-          docker rm ticketing-app || true
-          docker run -d --name ticketing-app -p 3000:3000 -e ADMIN_USER=${{ secrets.ADMIN_USER }} -e ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} -e DB_HOST=${{ secrets.DB_HOST }} -e DB_USER=${{ secrets.DB_USER }} -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} -e DB_NAME=${{ secrets.DB_NAME }} ${{ secrets.DOCKER_USERNAME }}/ticketing-app:latest
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # Démarrer ou mettre à jour MariaDB
+            docker stop ticketing-db || true
+            docker rm ticketing-db || true
+            docker volume rm ticketing-db-data || true
+            docker run -d \
+              --name ticketing-db \
+              -e MARIADB_ROOT_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e MARIADB_DATABASE=${{ secrets.DB_NAME }} \
+              -p 3306:3306 \
+              -v ticketing-db-data:/var/lib/mysql \
+              -v ~/init.sql:/docker-entrypoint-initdb.d/init.sql \
+              mariadb:10.5
+
+            # Attendre que le conteneur soit en état "running"
+            until [ "$(docker inspect -f '{{.State.Running}}' ticketing-db)" == "true" ]; do
+              echo "Waiting for ticketing-db container to be running..."
+              sleep 2
+            done
+
+            # Démarrer ou mettre à jour l'app
+            docker stop ticketing-app || true
+            docker rm ticketing-app || true
+            docker run -d \
+              --name ticketing-app \
+              --link ticketing-db:db \
+              -p 3000:3000 \
+              -e ADMIN_USER=${{ secrets.ADMIN_USER }} \
+              -e ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+              -e DB_HOST=db \
+              -e DB_USER=root \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
+              ${{ secrets.DOCKER_USERNAME }}/ticketing-app:latest
